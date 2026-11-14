@@ -70,6 +70,14 @@
     .note-card { background:#f3dad5; border-color:#efcdc5; box-shadow:none; position:relative; overflow:hidden; }
     .note-card:after { content:"✳"; position:absolute; right:-14px; bottom:-46px; font-size:160px; color:rgba(193,82,74,.12); pointer-events:none; }
     .note-card h3 { color:#813e38; margin-bottom:11px; }.note-card p { font-size:13px; line-height:1.65; max-width:250px; position:relative; margin-bottom:0; }
+    .submit-form { position:relative; z-index:1; display:grid; gap:11px; margin-top:16px; }
+    .submit-form label { display:grid; gap:5px; font-size:12px; font-weight:700; color:#713d39; }
+    .submit-form input { width:100%; border:1px solid #d9afa5; border-radius:9px; padding:10px; background:var(--paper); color:var(--ink); font:inherit; font-weight:400; }
+    .submit-form input:focus-visible,.submit-form button:focus-visible { outline:3px solid var(--gold); outline-offset:2px; }
+    .submit-form button { border:0; border-radius:10px; background:var(--pine); color:white; padding:11px; font-weight:700; cursor:pointer; }
+    .submit-form button:disabled { opacity:.55; cursor:not-allowed; }
+    .form-status,.load-status { font-size:12px; line-height:1.5; }
+    .form-status:not(:empty),.load-status:not(:empty) { padding:9px; background:#fffdfa; border-radius:8px; }
     .legend { display:flex; gap:10px 16px; flex-wrap:wrap; margin-top:26px; color:var(--muted); font-size:11px; }
     .legend span { display:flex; align-items:center; gap:6px; }.swatch { width:10px; height:10px; border-radius:3px; display:inline-block; }.swatch.gathering { background:#e9aaa5; }.swatch.travel { background:#91bf9e; }.swatch.food { background:#edca76; }.swatch.other { background:#b2a5d7; }
     footer { text-align:center; color:#829087; font-size:11px; margin-top:37px; line-height:1.6; }
@@ -87,35 +95,52 @@
     </div>
   </header>
   <main class="shell">
-    <div class="ribbon"><span><span class="dot"></span><strong>The plan:</strong> dates go here once the family confirms them.</span><span id="updated">First edition · 13 Nov 2026</span></div>
+    <div class="ribbon"><span><span class="dot"></span><strong>The plan:</strong> public activities added by visitors appear immediately.</span><span id="updated">First edition · 13 Nov 2026</span></div>
     <div class="layout">
       <section class="card calendar" aria-label="Holiday calendar">
         <div class="cal-head"><div><div class="eyebrow">Make room for the good stuff</div><h2 id="month-title">November 2026</h2></div><div class="cal-controls"><button class="icon-btn" id="prev" type="button" aria-label="Previous month">&#8592;</button><button class="icon-btn" id="next" type="button" aria-label="Next month">&#8594;</button></div></div>
         <div class="weekdays" aria-hidden="true"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
         <div class="grid" id="calendar-grid" role="grid" aria-label="Month dates"></div>
         <div class="cal-foot"><span>Tap a day to see what’s planned.</span><button class="today-btn" id="today" type="button">Jump to today</button></div>
-        <div class="legend" aria-label="Event categories"><span><i class="swatch gathering"></i> Get-togethers</span><span><i class="swatch food"></i> Food</span><span><i class="swatch travel"></i> Travel</span><span><i class="swatch other"></i> Other</span></div>
+        <p class="load-status" id="load-status" role="status" aria-live="polite"></p>
+
       </section>
       <aside class="side">
         <section class="card sidebar-card"><div class="eyebrow">The next good thing</div><h3>Coming up</h3><div id="upcoming" aria-live="polite"></div></section>
         <section class="card sidebar-card"><div class="eyebrow">Selected day</div><h3 id="selected-title">Pick a date</h3><div id="day-details" aria-live="polite" class="sub">Choose a day on the calendar to see its plans.</div></section>
-        <section class="card sidebar-card note-card"><div class="eyebrow">For the group chat</div><h3>Got an idea?</h3><p>Share the date, time, place, and whether it’s confirmed in the family chat. We’ll put confirmed plans into the next edition.</p></section>
+        <section class="card sidebar-card note-card"><div class="eyebrow">For the group chat</div><h3>Got an idea?</h3><p>Add an activity. Your name and event details will be visible to anyone on this public calendar immediately. A name is not identity verification. Please leave out private addresses and sensitive details.</p>
+          <form id="submit-form" class="submit-form">
+            <label>Your name <input name="submitter_name" maxlength="80" required autocomplete="name"></label>
+            <label>Activity title <input name="title" maxlength="120" required></label>
+            <label>Date <input name="date" type="date" min="2026-01-01" max="2100-12-31" required></label>
+            <label>Time (optional) <input name="time" type="time"></label>
+            <div id="turnstile-widget"></div>
+            <button id="submit-button" type="submit" disabled>Add to calendar</button>
+            <span class="form-status" id="form-status" role="status" aria-live="polite"></span>
+          </form>
+        </section>
       </aside>
     </div>
-    <footer>A little more together, a little less “wait, what time?” · Calendar updates are published as new editions.</footer>
+    <footer>A little more together, a little less “wait, what time?” · Public submissions appear immediately.</footer>
   </main>
   <script>
-    /* UPDATE HERE: Add confirmed events. Example format (do not treat this example as a real plan):
-       { date: '2026-12-25', title: 'Family dinner', time: '6:00 PM', place: 'At home', category: 'food' }
-       Categories: gathering, food, travel, other. Keep dates in YYYY-MM-DD format.
-       Then update LAST_UPDATED below and publish/reshare the new file. */
-    const EVENTS = [];
+    // Public Worker endpoint and Turnstile site key; no secrets belong in this page.
+    const API_BASE = 'https://family-holiday-calendar-api.preemayall.workers.dev';
+    const TURNSTILE_SITE_KEY = '0x4AAAAAAGARU4UttIRTfazC';
+    let EVENTS = [];
+    let upcomingEvents = [];
     const LAST_UPDATED = '13 Nov 2026';
     const grid = document.getElementById('calendar-grid');
     const title = document.getElementById('month-title');
     const upcoming = document.getElementById('upcoming');
     const selectedTitle = document.getElementById('selected-title');
     const dayDetails = document.getElementById('day-details');
+    const form = document.getElementById('submit-form');
+    const formStatus = document.getElementById('form-status');
+    const loadStatus = document.getElementById('load-status');
+    const submitButton = document.getElementById('submit-button');
+    let widgetId = null;
+    let loadSequence = 0;
     document.getElementById('updated').textContent = 'First edition · ' + LAST_UPDATED;
     const now = new Date();
     let month = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -129,7 +154,7 @@
       selected = key(d);
       selectedTitle.textContent = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
       const items = eventOn(selected);
-      dayDetails.innerHTML = items.length ? items.map(e => `<div class="event-item"><div class="event-info"><strong>${safe(e.title)}</strong><span>${safe([e.time,e.place].filter(Boolean).join(' · '))}</span></div></div>`).join('') : '<div class="empty"><span class="emoji" aria-hidden="true">✨</span>Nothing confirmed for this day yet.</div>';
+      dayDetails.innerHTML = items.length ? items.map(e => `<div class="event-item"><div class="event-info"><strong>${safe(e.title)}</strong><span>${safe([e.time, 'Added by ' + e.submitter_name].filter(Boolean).join(' · '))}</span></div></div>`).join('') : '<div class="empty"><span class="emoji" aria-hidden="true">✨</span>Nothing posted for this day yet.</div>';
       renderGrid();
     }
     function renderGrid() {
@@ -144,7 +169,7 @@
         const k = key(d), items = eventOn(k);
         const button = document.createElement('button');
         button.type = 'button'; button.className = 'day'; button.setAttribute('role','gridcell');
-        button.setAttribute('aria-label',label(d)+(items.length ? `, ${items.length} planned event${items.length===1?'':'s'}` : ', no plans confirmed'));
+        button.setAttribute('aria-label',label(d)+(items.length ? `, ${items.length} posted activit${items.length===1?'y':'ies'}` : ', no activities posted'));
         if(d.getMonth()!==month.getMonth()) button.classList.add('outside');
         if(k===key(now)) button.classList.add('today');
         if(k===selected) { button.classList.add('selected'); button.setAttribute('aria-selected','true'); }
@@ -156,13 +181,67 @@
       }
     }
     function renderUpcoming() {
-      const future = EVENTS.filter(e => e.date >= key(now)).sort((a,b) => a.date.localeCompare(b.date)).slice(0,5);
-      upcoming.innerHTML = future.length ? future.map(e => { const d=new Date(Number(e.date.slice(0,4)),Number(e.date.slice(5,7))-1,Number(e.date.slice(8,10))); return `<div class="event-item"><div class="event-date"><small>${safe(d.toLocaleDateString('en-US',{month:'short'}))}</small>${safe(d.getDate())}</div><div class="event-info"><strong>${safe(e.title)}</strong><span>${safe([e.time,e.place].filter(Boolean).join(' · '))}</span></div></div>`; }).join('') : '<div class="empty"><span class="emoji" aria-hidden="true">🎉</span>No confirmed plans yet.<br>Send the first one to the family chat!</div>';
+      upcoming.innerHTML = upcomingEvents.length ? upcomingEvents.map(e => { const d=new Date(Number(e.date.slice(0,4)),Number(e.date.slice(5,7))-1,Number(e.date.slice(8,10))); return `<div class="event-item"><div class="event-date"><small>${safe(d.toLocaleDateString('en-US',{month:'short'}))}</small>${safe(d.getDate())}</div><div class="event-info"><strong>${safe(e.title)}</strong><span>${safe([e.time, 'Added by ' + e.submitter_name].filter(Boolean).join(' · '))}</span></div></div>`; }).join('') : '<div class="empty"><span class="emoji" aria-hidden="true">🎉</span>No upcoming activities posted yet.</div>';
     }
-    document.getElementById('prev').addEventListener('click',()=>{ month=new Date(month.getFullYear(),month.getMonth()-1,1); renderGrid(); });
-    document.getElementById('next').addEventListener('click',()=>{ month=new Date(month.getFullYear(),month.getMonth()+1,1); renderGrid(); });
-    document.getElementById('today').addEventListener('click',()=>{ month=new Date(now.getFullYear(),now.getMonth(),1); showDay(now); });
+    async function api(path, options) {
+      const response = await fetch(API_BASE + path, options);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Please try again later.');
+      return data;
+    }
+    async function loadMonth() {
+      const request = ++loadSequence;
+      const target = `${month.getFullYear()}-${pad(month.getMonth()+1)}`;
+      EVENTS = []; renderGrid();
+      if (selected?.startsWith(target)) showDay(new Date(Number(selected.slice(0,4)),Number(selected.slice(5,7))-1,Number(selected.slice(8,10))));
+      loadStatus.textContent = 'Loading activities…';
+      try {
+        const data = await api('/events?month=' + target);
+        if (request !== loadSequence) return;
+        EVENTS = data.events; renderGrid();
+        if (selected?.startsWith(target)) showDay(new Date(Number(selected.slice(0,4)),Number(selected.slice(5,7))-1,Number(selected.slice(8,10))));
+        loadStatus.textContent = data.has_more ? 'Some activities are not shown. Please contact the calendar owner.' : '';
+      } catch (error) { if (request === loadSequence) loadStatus.textContent = 'Could not load activities. ' + error.message; }
+    }
+    async function loadUpcoming() {
+      try { upcomingEvents = (await api('/upcoming?from=' + key(new Date()))).events; renderUpcoming(); }
+      catch { upcoming.textContent = 'Could not load upcoming activities. Please refresh later.'; }
+    }
+    document.getElementById('prev').addEventListener('click',()=>{ month=new Date(month.getFullYear(),month.getMonth()-1,1); loadMonth(); });
+    document.getElementById('next').addEventListener('click',()=>{ month=new Date(month.getFullYear(),month.getMonth()+1,1); loadMonth(); });
+    document.getElementById('today').addEventListener('click',()=>{ month=new Date(now.getFullYear(),now.getMonth(),1); showDay(now); loadMonth(); });
+    form.elements.date.value = key(now);
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (!widgetId && widgetId !== 0) return;
+      const token = window.turnstile.getResponse(widgetId);
+      if (!token) { formStatus.textContent = 'Complete the security check first.'; return; }
+      submitButton.disabled = true;
+      formStatus.textContent = 'Adding your activity…';
+      try {
+        const fields = new FormData(form);
+        const entry = { submitter_name: fields.get('submitter_name'), title: fields.get('title'), date: fields.get('date'), time: fields.get('time'), turnstile_token: token };
+        await api('/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entry) });
+        formStatus.textContent = 'Activity added. It is now visible to everyone.';
+        form.reset(); form.elements.date.value = key(now);
+        window.turnstile.reset(widgetId);
+        await Promise.all([loadMonth(), loadUpcoming()]);
+      } catch (error) { formStatus.textContent = 'Could not add activity. ' + error.message; window.turnstile.reset(widgetId); }
+      finally { submitButton.disabled = false; }
+    });
     showDay(now); renderUpcoming();
+    if (!API_BASE || !TURNSTILE_SITE_KEY) {
+      loadStatus.textContent = 'Live calendar is not connected yet.';
+      formStatus.textContent = 'Submissions are not available yet.';
+      upcoming.textContent = 'Live calendar is not connected yet.';
+    } else {
+      loadMonth(); loadUpcoming();
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.onload = () => { try { widgetId = window.turnstile.render('#turnstile-widget', { sitekey: TURNSTILE_SITE_KEY, action: 'submit_event' }); submitButton.disabled = false; } catch { formStatus.textContent = 'Security check did not load. Please refresh the page.'; } };
+      script.onerror = () => { formStatus.textContent = 'Security check did not load. Please refresh the page.'; };
+      document.head.appendChild(script);
+    }
   </script>
 </body>
 </html>
