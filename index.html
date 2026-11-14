@@ -67,6 +67,13 @@
     .event-date { flex:0 0 48px; height:50px; border-radius:12px; background:#f9e8d9; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#a34543; line-height:1.1; font-size:19px; font-weight:700; }
     .event-date small { font-size:9px; text-transform:uppercase; letter-spacing:.1em; }
     .event-info { min-width:0; }.event-info strong { font-size:13px; display:block; line-height:1.35; }.event-info span { color:var(--muted); font-size:11px; display:block; line-height:1.45; margin-top:4px; }
+    .event-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+    .event-actions button,.removal-actions button { border:1px solid #b9cec0; background:#fff; color:var(--pine); border-radius:9px; padding:7px 9px; font-size:11px; font-weight:700; cursor:pointer; }
+    .event-actions button:focus-visible,.removal-actions button:focus-visible { outline:3px solid var(--gold); outline-offset:2px; }
+    .removal-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:9px; }
+    .removal-panel { margin-top:18px; padding:14px; background:var(--paper); border:1px solid #d9afa5; border-radius:12px; }
+    .removal-panel[hidden] { display:none; }.removal-panel p { max-width:none; margin-bottom:9px; }
+    .removal-actions button:disabled { opacity:.55; cursor:not-allowed; }
     .note-card { background:#f3dad5; border-color:#efcdc5; box-shadow:none; position:relative; overflow:hidden; }
     .note-card:after { content:"✳"; position:absolute; right:-14px; bottom:-46px; font-size:160px; color:rgba(193,82,74,.12); pointer-events:none; }
     .note-card h3 { color:#813e38; margin-bottom:11px; }.note-card p { font-size:13px; line-height:1.65; max-width:250px; position:relative; margin-bottom:0; }
@@ -83,7 +90,7 @@
     footer { text-align:center; color:#829087; font-size:11px; margin-top:37px; line-height:1.6; }
     @media(max-width:900px) { .layout { grid-template-columns:1fr; }.side { grid-template-columns:1fr 1fr; }.hero-inner { padding:40px 30px 50px; } }
     @media(max-width:600px) { .shell { padding:0 12px 45px; }.hero { border-radius:0 0 25px 25px; min-height:260px; }.hero-inner { padding:28px 22px 44px; }.hero-copy { margin-top:42px; }.hero-copy p { font-size:14px; }.season { font-size:10px; padding:7px 9px; }.sparkle { opacity:.65; }.s1 { right:7%; top:115px; }.s2,.s3 { display:none; }.ribbon { margin:15px 0; padding:14px; }.calendar { padding:20px 10px 18px; }.cal-head { padding:0 8px; }.weekdays { font-size:9px; }.day { min-height:64px; padding:5px 3px; }.day-number { width:23px; height:23px; font-size:11px; }.event-mini { font-size:0; width:7px; height:7px; padding:0; border-radius:50%; margin:5px 0 0 8px; }.more { font-size:8px; }.cal-foot { padding:0 8px; }.side { grid-template-columns:1fr; }.sidebar-card { padding:22px; }.legend { padding:0 9px; } }
-    @media print { body { background:white; }.hero { min-height:auto; border-radius:0; -webkit-print-color-adjust:exact; print-color-adjust:exact; }.hero-inner { padding:20px; }.shell { padding:0; }.card { box-shadow:none; break-inside:avoid; }.ribbon,.icon-btn,.today-btn { display:none; }.layout { grid-template-columns:1fr 290px; gap:14px; }.day { min-height:65px; }.side { display:block; }.note-card { margin-top:12px; } }
+    @media print { body { background:white; }.hero { min-height:auto; border-radius:0; -webkit-print-color-adjust:exact; print-color-adjust:exact; }.hero-inner { padding:20px; }.shell { padding:0; }.card { box-shadow:none; break-inside:avoid; }.ribbon,.icon-btn,.today-btn,.event-actions,.removal-panel { display:none; }.layout { grid-template-columns:1fr 290px; gap:14px; }.day { min-height:65px; }.side { display:block; }.note-card { margin-top:12px; } }
   </style>
 </head>
 <body>
@@ -108,7 +115,7 @@
       <aside class="side">
         <section class="card sidebar-card"><div class="eyebrow">The next good thing</div><h3>Coming up</h3><div id="upcoming" aria-live="polite"></div></section>
         <section class="card sidebar-card"><div class="eyebrow">Selected day</div><h3 id="selected-title">Pick a date</h3><div id="day-details" aria-live="polite" class="sub">Choose a day on the calendar to see its plans.</div></section>
-        <section class="card sidebar-card note-card"><div class="eyebrow">For the group chat</div><h3>Got an idea?</h3><p>Add an activity. Your name and event details will be visible to anyone on this public calendar immediately. A name is not identity verification. Please leave out private addresses and sensitive details.</p>
+        <section class="card sidebar-card note-card"><div class="eyebrow">For the group chat</div><h3>Got an idea?</h3><p>Add an activity. Your name and event details will be visible to anyone on this public calendar immediately. A name is not identity verification. Please leave out private addresses and sensitive details.</p><p>Anyone visiting this calendar can remove any activity after a security check. Please use removal responsibly; ask the calendar owner to restore a removed activity.</p>
           <form id="submit-form" class="submit-form">
             <label>Your name <input name="submitter_name" maxlength="80" required autocomplete="name"></label>
             <label>Activity title <input name="title" maxlength="120" required></label>
@@ -118,6 +125,12 @@
             <button id="submit-button" type="submit" disabled>Add to calendar</button>
             <span class="form-status" id="form-status" role="status" aria-live="polite"></span>
           </form>
+          <div class="removal-panel" id="removal-panel" hidden>
+            <p id="removal-label"></p><p>Complete this separate security check, then choose “Remove activity”.</p>
+            <div id="removal-widget"></div>
+            <div class="removal-actions"><button id="confirm-removal" type="button">Remove activity</button><button id="cancel-removal" type="button">Cancel</button></div>
+            <span class="form-status" id="removal-status" role="status" aria-live="polite"></span>
+          </div>
         </section>
       </aside>
     </div>
@@ -138,13 +151,73 @@
     const form = document.getElementById('submit-form');
     const formStatus = document.getElementById('form-status');
     const loadStatus = document.getElementById('load-status');
+    const removalPanel = document.getElementById('removal-panel');
+    const removalLabel = document.getElementById('removal-label');
+    const removalStatus = document.getElementById('removal-status');
+    const confirmRemoval = document.getElementById('confirm-removal');
     const submitButton = document.getElementById('submit-button');
+    function eventControls(e) {
+      return `<div class="event-actions"><button type="button" data-remove-id="${safe(e.id)}" aria-label="Remove ${safe(e.title)}">Remove</button></div>`;
+    }
+    let removalWidgetId = null;
+    let pendingRemoval = null;
+    let removing = false;
+    function removeActivity(e) {
+      if (removing || !window.confirm(`Remove “${e.title}” from the public calendar? Anyone can remove activities; the calendar owner can restore them.`)) return;
+      if (!window.turnstile) { formStatus.textContent = 'Security check is loading. Please try again shortly.'; return; }
+      pendingRemoval = e;
+      removalPanel.hidden = false;
+      removalLabel.textContent = 'Security check to remove: ' + e.title;
+      removalStatus.textContent = '';
+      removalPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      try {
+        if (removalWidgetId === null) removalWidgetId = window.turnstile.render('#removal-widget', { sitekey: TURNSTILE_SITE_KEY, action: 'remove_event' });
+        else window.turnstile.reset(removalWidgetId);
+      } catch { pendingRemoval = null; removalPanel.hidden = true; formStatus.textContent = 'Removal security check did not load. Please refresh.'; }
+    }
+    document.getElementById('cancel-removal').addEventListener('click', () => {
+      if (removing) return;
+      pendingRemoval = null; removalPanel.hidden = true;
+      if (removalWidgetId !== null) window.turnstile.reset(removalWidgetId);
+    });
+    confirmRemoval.addEventListener('click', async () => {
+      if (!pendingRemoval || removing || removalWidgetId === null) return;
+      const token = window.turnstile.getResponse(removalWidgetId);
+      if (!token) { removalStatus.textContent = 'Complete the removal security check first.'; return; }
+      const id = pendingRemoval.id;
+      removing = true; confirmRemoval.disabled = true;
+      removalStatus.textContent = 'Removing activity…';
+      try {
+        await api('/events/' + encodeURIComponent(id), { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ turnstile_token: token }) });
+        ++loadSequence; ++upcomingSequence;
+        EVENTS = EVENTS.filter(item => item.id !== id);
+        upcomingEvents = upcomingEvents.filter(item => item.id !== id);
+        renderGrid(); renderUpcoming();
+        if (selected) showDay(new Date(Number(selected.slice(0,4)), Number(selected.slice(5,7))-1, Number(selected.slice(8,10))));
+        pendingRemoval = null; removalPanel.hidden = true;
+        formStatus.textContent = 'Activity removed from the public calendar.';
+        await Promise.all([loadMonth(), loadUpcoming()]);
+      } catch (error) { removalStatus.textContent = 'Could not remove activity. ' + error.message; }
+      finally { window.turnstile.reset(removalWidgetId); removing = false; confirmRemoval.disabled = false; }
+    });
+    async function handleEventAction(event) {
+      const button = event.target.closest('button[data-remove-id]');
+      if (!button) return;
+      const id = button.dataset.removeId;
+      const e = [...EVENTS, ...upcomingEvents].find(item => item.id === id);
+      if (!e) { formStatus.textContent = 'Activity not found. Refresh or ask the calendar owner for help.'; return; }
+      removeActivity(e);
+    }
+    dayDetails.addEventListener('click', handleEventAction);
+    upcoming.addEventListener('click', handleEventAction);
     let widgetId = null;
     let loadSequence = 0;
+    let upcomingSequence = 0;
     document.getElementById('updated').textContent = 'First edition · ' + LAST_UPDATED;
     const now = new Date();
     let month = new Date(now.getFullYear(), now.getMonth(), 1);
     let selected = null;
+
     const pad = n => String(n).padStart(2,'0');
     const key = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
     const label = d => d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
@@ -154,7 +227,7 @@
       selected = key(d);
       selectedTitle.textContent = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
       const items = eventOn(selected);
-      dayDetails.innerHTML = items.length ? items.map(e => `<div class="event-item"><div class="event-info"><strong>${safe(e.title)}</strong><span>${safe([e.time, 'Added by ' + e.submitter_name].filter(Boolean).join(' · '))}</span></div></div>`).join('') : '<div class="empty"><span class="emoji" aria-hidden="true">✨</span>Nothing posted for this day yet.</div>';
+      dayDetails.innerHTML = items.length ? items.map(e => `<div class="event-item"><div class="event-info"><strong>${safe(e.title)}</strong><span>${safe([e.time, 'Added by ' + e.submitter_name].filter(Boolean).join(' · '))}</span>${eventControls(e)}</div></div>`).join('') : '<div class="empty"><span class="emoji" aria-hidden="true">✨</span>Nothing posted for this day yet.</div>';
       renderGrid();
     }
     function renderGrid() {
@@ -181,7 +254,7 @@
       }
     }
     function renderUpcoming() {
-      upcoming.innerHTML = upcomingEvents.length ? upcomingEvents.map(e => { const d=new Date(Number(e.date.slice(0,4)),Number(e.date.slice(5,7))-1,Number(e.date.slice(8,10))); return `<div class="event-item"><div class="event-date"><small>${safe(d.toLocaleDateString('en-US',{month:'short'}))}</small>${safe(d.getDate())}</div><div class="event-info"><strong>${safe(e.title)}</strong><span>${safe([e.time, 'Added by ' + e.submitter_name].filter(Boolean).join(' · '))}</span></div></div>`; }).join('') : '<div class="empty"><span class="emoji" aria-hidden="true">🎉</span>No upcoming activities posted yet.</div>';
+      upcoming.innerHTML = upcomingEvents.length ? upcomingEvents.map(e => { const d=new Date(Number(e.date.slice(0,4)),Number(e.date.slice(5,7))-1,Number(e.date.slice(8,10))); return `<div class="event-item"><div class="event-date"><small>${safe(d.toLocaleDateString('en-US',{month:'short'}))}</small>${safe(d.getDate())}</div><div class="event-info"><strong>${safe(e.title)}</strong><span>${safe([e.time, 'Added by ' + e.submitter_name].filter(Boolean).join(' · '))}</span>${eventControls(e)}</div></div>`; }).join('') : '<div class="empty"><span class="emoji" aria-hidden="true">🎉</span>No upcoming activities posted yet.</div>';
     }
     async function api(path, options) {
       const response = await fetch(API_BASE + path, options);
@@ -200,12 +273,14 @@
         if (request !== loadSequence) return;
         EVENTS = data.events; renderGrid();
         if (selected?.startsWith(target)) showDay(new Date(Number(selected.slice(0,4)),Number(selected.slice(5,7))-1,Number(selected.slice(8,10))));
+
         loadStatus.textContent = data.has_more ? 'Some activities are not shown. Please contact the calendar owner.' : '';
       } catch (error) { if (request === loadSequence) loadStatus.textContent = 'Could not load activities. ' + error.message; }
     }
     async function loadUpcoming() {
-      try { upcomingEvents = (await api('/upcoming?from=' + key(new Date()))).events; renderUpcoming(); }
-      catch { upcoming.textContent = 'Could not load upcoming activities. Please refresh later.'; }
+      const request = ++upcomingSequence;
+      try { const data = await api('/upcoming?from=' + key(new Date())); if (request === upcomingSequence) { upcomingEvents = data.events; renderUpcoming(); } }
+      catch { if (request === upcomingSequence) upcoming.textContent = 'Could not load upcoming activities. Please refresh later.'; }
     }
     document.getElementById('prev').addEventListener('click',()=>{ month=new Date(month.getFullYear(),month.getMonth()-1,1); loadMonth(); });
     document.getElementById('next').addEventListener('click',()=>{ month=new Date(month.getFullYear(),month.getMonth()+1,1); loadMonth(); });
@@ -229,7 +304,7 @@
       } catch (error) { formStatus.textContent = 'Could not add activity. ' + error.message; window.turnstile.reset(widgetId); }
       finally { submitButton.disabled = false; }
     });
-    showDay(now); renderUpcoming();
+    showDay(selected ? new Date(Number(selected.slice(0,4)), Number(selected.slice(5,7))-1, Number(selected.slice(8,10))) : now); renderUpcoming();
     if (!API_BASE || !TURNSTILE_SITE_KEY) {
       loadStatus.textContent = 'Live calendar is not connected yet.';
       formStatus.textContent = 'Submissions are not available yet.';
