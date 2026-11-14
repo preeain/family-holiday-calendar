@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#183c37">
+  <title>Our Holiday Calendar</title>
+  <meta name="description" content="A cheerful home for our family's holiday plans.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght,SOFT,WONK@9..144,600,30,1;9..144,700,30,1&display=swap" rel="stylesheet">
+  <style>
+    :root { --pine:#183c37; --pine2:#28564e; --cream:#fbf6e9; --paper:#fffdfa; --ink:#223832; --muted:#69766d; --red:#c9514c; --gold:#e5ad4b; --pink:#f9d5d0; --mint:#dcebe2; --line:#e9e6da; --shadow:0 20px 50px rgba(28,55,45,.10); }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:var(--cream); color:var(--ink); font-family:"DM Sans",system-ui,sans-serif; }
+    button { font:inherit; }
+    .shell { max-width:1240px; margin:auto; padding:0 28px 72px; }
+    .hero { position:relative; overflow:hidden; background:var(--pine); color:#fffdf4; border-radius:0 0 34px 34px; min-height:298px; isolation:isolate; }
+    .hero:before { content:""; position:absolute; width:510px; height:510px; border:1px solid rgba(255,255,255,.14); border-radius:50%; right:-100px; top:-260px; box-shadow:0 0 0 68px rgba(255,255,255,.035),0 0 0 142px rgba(255,255,255,.025); z-index:-1; }
+    .hero-inner { max-width:1184px; margin:auto; padding:45px 42px 59px; position:relative; }
+    .topline { display:flex; justify-content:space-between; align-items:center; gap:16px; }
+    .brand { font-weight:700; letter-spacing:.13em; text-transform:uppercase; font-size:11px; color:#dbe8d4; display:flex; align-items:center; gap:10px; }
+    .brand-mark { width:30px; height:30px; display:grid; place-items:center; border-radius:50%; background:var(--gold); color:var(--pine); font-size:18px; }
+    .season { border:1px solid rgba(255,255,255,.3); padding:9px 13px; border-radius:99px; color:#e4ebde; font-size:12px; }
+    .hero-copy { margin-top:42px; position:relative; z-index:1; }
+    h1,h2,h3,p { margin-top:0; }
+    h1,h2,h3 { font-family:Fraunces,Georgia,serif; }
+    h1 { font-size:clamp(46px,6vw,84px); line-height:1.02; letter-spacing:-.055em; max-width:800px; margin-bottom:17px; }
+    .hero-copy p { color:#d7e5d8; font-size:16px; max-width:620px; line-height:1.65; margin-bottom:0; }
+    .sparkle { position:absolute; color:var(--gold); font-size:34px; line-height:1; }
+    .s1 { right:16%; top:100px; transform:rotate(18deg); }.s2 { right:8%; bottom:35px; font-size:24px; }.s3 { right:29%; bottom:22px; font-size:16px; }
+    .ribbon { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin:24px 0; padding:15px 21px; border-radius:16px; background:#f4e7c9; color:#5c4831; font-size:13px; }
+    .ribbon strong { color:#3e543e; }
+    .ribbon .dot { display:inline-block; margin-right:8px; width:8px; height:8px; border-radius:50%; background:#df9f46; }
+    .layout { display:grid; grid-template-columns:minmax(0,1.82fr) minmax(275px,.9fr); gap:22px; align-items:start; }
+    .card { background:var(--paper); border:1px solid var(--line); border-radius:24px; box-shadow:var(--shadow); }
+    .calendar { padding:30px 30px 26px; }
+    .cal-head { display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:23px; }
+    .eyebrow { color:var(--red); text-transform:uppercase; letter-spacing:.16em; font-size:10px; font-weight:700; margin-bottom:8px; }
+    h2 { font-size:clamp(27px,3vw,36px); letter-spacing:-.035em; margin-bottom:0; }
+    .cal-controls { display:flex; gap:8px; flex-shrink:0; }
+    .icon-btn { width:38px; height:38px; border:1px solid #dce4db; background:#fff; border-radius:12px; color:var(--pine); cursor:pointer; display:grid; place-items:center; transition:background .2s,transform .2s; }
+    .icon-btn:hover { background:var(--mint); transform:translateY(-2px); }
+    .icon-btn:focus-visible,.today-btn:focus-visible,.day:focus-visible { outline:3px solid var(--gold); outline-offset:2px; }
+    .weekdays,.grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); }
+    .weekdays { padding-bottom:10px; color:var(--muted); font-size:11px; font-weight:700; text-align:center; text-transform:uppercase; letter-spacing:.08em; }
+    .grid { border-left:1px solid var(--line); border-top:1px solid var(--line); border-radius:14px; overflow:hidden; }
+    .day { position:relative; min-height:95px; padding:10px 9px; background:var(--paper); border:0; border-right:1px solid var(--line); border-bottom:1px solid var(--line); text-align:left; color:var(--ink); cursor:pointer; transition:background .16s; min-width:0; }
+    .day:hover,.day.selected { background:#fff2e8; }.day.outside { background:#faf9f5; color:#a4ada4; }.day.outside:hover { background:#f2f1eb; }
+    .day-number { display:inline-grid; place-items:center; width:27px; height:27px; border-radius:50%; font-size:13px; font-weight:700; }
+    .day.today .day-number { background:var(--red); color:white; }
+    .day.selected:not(.today) .day-number { background:var(--pine); color:white; }
+    .event-mini { display:block; margin-top:7px; padding:5px 6px; border-radius:6px; font-size:10px; line-height:1.25; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .event-mini.gathering { background:#fae2de; color:#a33f40; }.event-mini.travel { background:#e1eee6; color:#28614b; }.event-mini.food { background:#fff0ce; color:#856025; }.event-mini.other { background:#e8e5f4; color:#59467f; }
+    .more { color:var(--muted); font-size:10px; display:block; margin-top:4px; }
+    .cal-foot { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:20px; color:var(--muted); font-size:12px; }
+    .today-btn { border:0; background:var(--mint); color:var(--pine); border-radius:99px; font-weight:700; cursor:pointer; padding:8px 13px; }
+    .side { display:grid; gap:18px; }
+    .sidebar-card { padding:26px; }
+    .sidebar-card h3 { font-size:25px; letter-spacing:-.04em; margin-bottom:16px; }
+    .sidebar-card .sub { color:var(--muted); font-size:12px; line-height:1.55; margin-top:-7px; }
+    .empty { background:#f7f6f0; border:1px dashed #d7dccd; border-radius:14px; padding:23px 18px; text-align:center; color:var(--muted); font-size:13px; line-height:1.55; }
+    .empty .emoji { display:block; font-size:30px; margin-bottom:8px; }
+    .event-item { display:flex; gap:12px; padding:14px 0; border-bottom:1px solid var(--line); }
+    .event-item:last-child { border-bottom:0; padding-bottom:0; }
+    .event-date { flex:0 0 48px; height:50px; border-radius:12px; background:#f9e8d9; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#a34543; line-height:1.1; font-size:19px; font-weight:700; }
+    .event-date small { font-size:9px; text-transform:uppercase; letter-spacing:.1em; }
+    .event-info { min-width:0; }.event-info strong { font-size:13px; display:block; line-height:1.35; }.event-info span { color:var(--muted); font-size:11px; display:block; line-height:1.45; margin-top:4px; }
+    .note-card { background:#f3dad5; border-color:#efcdc5; box-shadow:none; position:relative; overflow:hidden; }
+    .note-card:after { content:"✳"; position:absolute; right:-14px; bottom:-46px; font-size:160px; color:rgba(193,82,74,.12); pointer-events:none; }
+    .note-card h3 { color:#813e38; margin-bottom:11px; }.note-card p { font-size:13px; line-height:1.65; max-width:250px; position:relative; margin-bottom:0; }
+    .legend { display:flex; gap:10px 16px; flex-wrap:wrap; margin-top:26px; color:var(--muted); font-size:11px; }
+    .legend span { display:flex; align-items:center; gap:6px; }.swatch { width:10px; height:10px; border-radius:3px; display:inline-block; }.swatch.gathering { background:#e9aaa5; }.swatch.travel { background:#91bf9e; }.swatch.food { background:#edca76; }.swatch.other { background:#b2a5d7; }
+    footer { text-align:center; color:#829087; font-size:11px; margin-top:37px; line-height:1.6; }
+    @media(max-width:900px) { .layout { grid-template-columns:1fr; }.side { grid-template-columns:1fr 1fr; }.hero-inner { padding:40px 30px 50px; } }
+    @media(max-width:600px) { .shell { padding:0 12px 45px; }.hero { border-radius:0 0 25px 25px; min-height:260px; }.hero-inner { padding:28px 22px 44px; }.hero-copy { margin-top:42px; }.hero-copy p { font-size:14px; }.season { font-size:10px; padding:7px 9px; }.sparkle { opacity:.65; }.s1 { right:7%; top:115px; }.s2,.s3 { display:none; }.ribbon { margin:15px 0; padding:14px; }.calendar { padding:20px 10px 18px; }.cal-head { padding:0 8px; }.weekdays { font-size:9px; }.day { min-height:64px; padding:5px 3px; }.day-number { width:23px; height:23px; font-size:11px; }.event-mini { font-size:0; width:7px; height:7px; padding:0; border-radius:50%; margin:5px 0 0 8px; }.more { font-size:8px; }.cal-foot { padding:0 8px; }.side { grid-template-columns:1fr; }.sidebar-card { padding:22px; }.legend { padding:0 9px; } }
+    @media print { body { background:white; }.hero { min-height:auto; border-radius:0; -webkit-print-color-adjust:exact; print-color-adjust:exact; }.hero-inner { padding:20px; }.shell { padding:0; }.card { box-shadow:none; break-inside:avoid; }.ribbon,.icon-btn,.today-btn { display:none; }.layout { grid-template-columns:1fr 290px; gap:14px; }.day { min-height:65px; }.side { display:block; }.note-card { margin-top:12px; } }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="topline"><div class="brand"><span class="brand-mark" aria-hidden="true">✳</span> The family edition</div><span class="season">Holiday season · 2026</span></div>
+      <div class="hero-copy"><h1>Good times,<br>all together<span style="color:#e9b353">.</span></h1><p>One cheerful place for the plans, the people, and the little moments worth making time for.</p></div>
+      <span class="sparkle s1" aria-hidden="true">✳</span><span class="sparkle s2" aria-hidden="true">✦</span><span class="sparkle s3" aria-hidden="true">✧</span>
+    </div>
+  </header>
+  <main class="shell">
+    <div class="ribbon"><span><span class="dot"></span><strong>The plan:</strong> dates go here once the family confirms them.</span><span id="updated">First edition · 13 Nov 2026</span></div>
+    <div class="layout">
+      <section class="card calendar" aria-label="Holiday calendar">
+        <div class="cal-head"><div><div class="eyebrow">Make room for the good stuff</div><h2 id="month-title">November 2026</h2></div><div class="cal-controls"><button class="icon-btn" id="prev" type="button" aria-label="Previous month">&#8592;</button><button class="icon-btn" id="next" type="button" aria-label="Next month">&#8594;</button></div></div>
+        <div class="weekdays" aria-hidden="true"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+        <div class="grid" id="calendar-grid" role="grid" aria-label="Month dates"></div>
+        <div class="cal-foot"><span>Tap a day to see what’s planned.</span><button class="today-btn" id="today" type="button">Jump to today</button></div>
+        <div class="legend" aria-label="Event categories"><span><i class="swatch gathering"></i> Get-togethers</span><span><i class="swatch food"></i> Food</span><span><i class="swatch travel"></i> Travel</span><span><i class="swatch other"></i> Other</span></div>
+      </section>
+      <aside class="side">
+        <section class="card sidebar-card"><div class="eyebrow">The next good thing</div><h3>Coming up</h3><div id="upcoming" aria-live="polite"></div></section>
+        <section class="card sidebar-card"><div class="eyebrow">Selected day</div><h3 id="selected-title">Pick a date</h3><div id="day-details" aria-live="polite" class="sub">Choose a day on the calendar to see its plans.</div></section>
+        <section class="card sidebar-card note-card"><div class="eyebrow">For the group chat</div><h3>Got an idea?</h3><p>Share the date, time, place, and whether it’s confirmed in the family chat. We’ll put confirmed plans into the next edition.</p></section>
+      </aside>
+    </div>
+    <footer>A little more together, a little less “wait, what time?” · Calendar updates are published as new editions.</footer>
+  </main>
+  <script>
+    /* UPDATE HERE: Add confirmed events. Example format (do not treat this example as a real plan):
+       { date: '2026-12-25', title: 'Family dinner', time: '6:00 PM', place: 'At home', category: 'food' }
+       Categories: gathering, food, travel, other. Keep dates in YYYY-MM-DD format.
+       Then update LAST_UPDATED below and publish/reshare the new file. */
+    const EVENTS = [];
+    const LAST_UPDATED = '13 Nov 2026';
+    const grid = document.getElementById('calendar-grid');
+    const title = document.getElementById('month-title');
+    const upcoming = document.getElementById('upcoming');
+    const selectedTitle = document.getElementById('selected-title');
+    const dayDetails = document.getElementById('day-details');
+    document.getElementById('updated').textContent = 'First edition · ' + LAST_UPDATED;
+    const now = new Date();
+    let month = new Date(now.getFullYear(), now.getMonth(), 1);
+    let selected = null;
+    const pad = n => String(n).padStart(2,'0');
+    const key = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const label = d => d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+    const safe = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const eventOn = k => EVENTS.filter(e => e.date === k);
+    function showDay(d) {
+      selected = key(d);
+      selectedTitle.textContent = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+      const items = eventOn(selected);
+      dayDetails.innerHTML = items.length ? items.map(e => `<div class="event-item"><div class="event-info"><strong>${safe(e.title)}</strong><span>${safe([e.time,e.place].filter(Boolean).join(' · '))}</span></div></div>`).join('') : '<div class="empty"><span class="emoji" aria-hidden="true">✨</span>Nothing confirmed for this day yet.</div>';
+      renderGrid();
+    }
+    function renderGrid() {
+      title.textContent = month.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+      grid.replaceChildren();
+      const start = new Date(month.getFullYear(),month.getMonth(),1);
+      const offset = start.getDay();
+      const daysInMonth = new Date(month.getFullYear(),month.getMonth()+1,0).getDate();
+      const cells = Math.ceil((offset + daysInMonth)/7)*7;
+      for(let i=0;i<cells;i++) {
+        const d = new Date(month.getFullYear(),month.getMonth(),i-offset+1);
+        const k = key(d), items = eventOn(k);
+        const button = document.createElement('button');
+        button.type = 'button'; button.className = 'day'; button.setAttribute('role','gridcell');
+        button.setAttribute('aria-label',label(d)+(items.length ? `, ${items.length} planned event${items.length===1?'':'s'}` : ', no plans confirmed'));
+        if(d.getMonth()!==month.getMonth()) button.classList.add('outside');
+        if(k===key(now)) button.classList.add('today');
+        if(k===selected) { button.classList.add('selected'); button.setAttribute('aria-selected','true'); }
+        const num = document.createElement('span'); num.className='day-number'; num.textContent=d.getDate(); button.appendChild(num);
+        items.slice(0,2).forEach(e => { const badge=document.createElement('span'); badge.className='event-mini '+(['gathering','food','travel','other'].includes(e.category)?e.category:'other'); badge.textContent=e.title; button.appendChild(badge); });
+        if(items.length>2) { const more=document.createElement('span'); more.className='more'; more.textContent=`+${items.length-2} more`; button.appendChild(more); }
+        button.addEventListener('click',()=>{ if(d.getMonth()!==month.getMonth()) month=new Date(d.getFullYear(),d.getMonth(),1); showDay(d); });
+        grid.appendChild(button);
+      }
+    }
+    function renderUpcoming() {
+      const future = EVENTS.filter(e => e.date >= key(now)).sort((a,b) => a.date.localeCompare(b.date)).slice(0,5);
+      upcoming.innerHTML = future.length ? future.map(e => { const d=new Date(Number(e.date.slice(0,4)),Number(e.date.slice(5,7))-1,Number(e.date.slice(8,10))); return `<div class="event-item"><div class="event-date"><small>${safe(d.toLocaleDateString('en-US',{month:'short'}))}</small>${safe(d.getDate())}</div><div class="event-info"><strong>${safe(e.title)}</strong><span>${safe([e.time,e.place].filter(Boolean).join(' · '))}</span></div></div>`; }).join('') : '<div class="empty"><span class="emoji" aria-hidden="true">🎉</span>No confirmed plans yet.<br>Send the first one to the family chat!</div>';
+    }
+    document.getElementById('prev').addEventListener('click',()=>{ month=new Date(month.getFullYear(),month.getMonth()-1,1); renderGrid(); });
+    document.getElementById('next').addEventListener('click',()=>{ month=new Date(month.getFullYear(),month.getMonth()+1,1); renderGrid(); });
+    document.getElementById('today').addEventListener('click',()=>{ month=new Date(now.getFullYear(),now.getMonth(),1); showDay(now); });
+    showDay(now); renderUpcoming();
+  </script>
+</body>
+</html>
